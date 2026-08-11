@@ -2,7 +2,7 @@ clear; close all; clc;
 [project_dir, ~, psychopy_csv_dir, ~, ~, ~, ~, ~, ~, ~, ~,~, ~, ~, subjects] = set_up_dirs_constants();
 
 
-mds_metrics = {'cosine', 'correlation'};
+mds_metrics = {'cosine'}; %, 'correlation'};
 mds_aligned = true;
 if mds_aligned, seeds = {'seedAvg'};else seeds = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '10'}; end
 if mds_aligned, mds_folder = 'MDS_aligned'; else mds_folder = 'MDS'; end

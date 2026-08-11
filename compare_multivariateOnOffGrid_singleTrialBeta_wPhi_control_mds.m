@@ -1,21 +1,37 @@
 [project_dir, fmri_data_dir, ~, theta_dir, category_dir, ~, ~, ~, spm_timing_dir, motion_regressors_dir, nuisance_regressors_dir, spm1stlevel_dir, ~, phi_dir, subjects] = set_up_dirs_constants();
 
 
-ICA_type = 'noICA';
+ICA_type = 'noICA'; % 'noICA' or 'wICA'
 spm1stlevel_dir = [spm1stlevel_dir, '_', ICA_type, '_wButton'];
-theta_sources = {'Subavg', 'Subspec'};
-%periodicity = {6, 4, 5, 7, 8};
-cross_validations = {'xModalityRun', 'xModality'}; 
-phi_averaging_methods = 'voxelComponentAverage';
-phi_calculation_methods = 'singleTrialBeta';
+theta_sources = {'Subavg', 'Subspec'};%, 'Norm', 'Subspec', 'Subavg'};
+cross_validations = {'xModalityRun', 'xModality'};%'phi0''avgAllRuns',
+phi_averaging_methods = 'voxelComponentAverage'; % 'voxelCircularMean' or 'voxelComponentAverage'
+phi_calculation_methods = 'singleTrialBeta';%'spm1stlevel'; % 'singleTrialBeta' or 'spm1stlevel'
 phi_dir_voxelcircularmean = fullfile(phi_dir, 'univariate', phi_calculation_methods, ICA_type);
 
-base_output_dir = fullfile(project_dir, 'outputs', 'singleTrialBetaAnalysis', ICA_type, 'incl_all_subs_trials','onoffGridcontrast_multivariate_wMoreControls');
-phi_dir_voxelcomponentaverage = fullfile(project_dir, 'outputs', 'phi', 'univariate', [phi_calculation_methods, '_regionwise'], ICA_type);
+mds_metrics = {'cosine'};
+periodicity = {6, 4, 5, 7, 8, 3};
+mds_aligned = true;
+if mds_aligned, seeds = {'seedAvg'}; else seeds = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '10'}; end
+array_id = str2double(getenv('SLURM_ARRAY_TASK_ID'));
+n_mds = numel(mds_metrics); n_per = numel(periodicity); n_seed = numel(seeds); total_jobs = n_mds * n_per * n_seed;
+[mds_idx, per_idx, seed_idx] = ind2sub([n_mds, n_per, n_seed], array_id);
+mds_metric = mds_metrics{mds_idx}; periodicity = periodicity(per_idx); seed = seeds{seed_idx};
+fprintf('Array %d → metric=%s, periodicity=%d, seed=%s\n', array_id, mds_metric, periodicity{1}, seed);
+
+if mds_aligned
+    theta_dir = fullfile(project_dir, 'data', 'beh', ['theta_mdsAligned_', mds_metric], ['seed', seed]);
+    base_output_dir = fullfile(project_dir, 'outputs', 'singleTrialBetaAnalysis', ICA_type, 'incl_all_subs_trials',['onoffGridcontrast_multivariate_mdsAligned', mds_metric, '_wMoreControls'], ['seed', seed]);
+    phi_dir_voxelcomponentaverage = fullfile(project_dir, 'outputs', 'phi', 'univariate', [phi_calculation_methods, '_regionwise_mdsAligned', mds_metric], ['seed', seed], ICA_type);
+else
+    theta_dir = fullfile(project_dir, 'data', 'beh', ['theta_mds_', mds_metric], ['seed', seed]);
+    base_output_dir = fullfile(project_dir, 'outputs', 'singleTrialBetaAnalysis', ICA_type, 'incl_all_subs_trials',['onoffGridcontrast_multivariate_mds', mds_metric, '_wMoreControls'], ['seed', seed]);
+    phi_dir_voxelcomponentaverage = fullfile(project_dir, 'outputs', 'phi', 'univariate', [phi_calculation_methods, '_regionwise_mds', mds_metric], ['seed', seed], ICA_type);
+end
 
 if ~exist(base_output_dir, 'dir'), mkdir(base_output_dir); end
 runs = [1, 2]; 
-
+%
 smooth = 'unsmoothed'; base_output_dir = fullfile(base_output_dir, smooth); phi_dir_voxelcomponentaverage = fullfile(phi_dir_voxelcomponentaverage, smooth); spm1stlevel_dir = fullfile(spm1stlevel_dir, smooth);
 %phi_source_region = 'vmPFCcurrentStudyR3'; base_output_dir = fullfile(base_output_dir, ['phi_', phi_source_region]);%'current'
 phi_source_region= 'current';
@@ -31,11 +47,11 @@ va_dir = fullfile(project_dir, 'data', 'beh', 'VA');
 id_setting_dir = fullfile(project_dir, 'data', 'beh', 'id_setting');
 response_dir = fullfile(project_dir, 'data', 'beh', 'inscan_judgment');
 brain_atlas = load_atlas('canlab2018');
+
 region_names = {'OFC2016ConstantinescuR5','HC','ERC'};
 region_masks = {fullfile(project_dir, 'masks', 'OFC_2016Constantinescu_r5.nii'),...
                 fullfile(project_dir, 'masks', 'HC_Julich.nii'),...
                 fullfile(project_dir, 'masks', 'ERC_Julich.nii')};
-
 
 [brain_data_all, brain_modality_run_idx, brain_sub_ids] = load_and_prepare_brain_data(subjects, spm1stlevel_dir, region_masks, region_names);
 template_nifti_object = fmri_data(fullfile(spm1stlevel_dir, ['sub', subjects{1}], 'singleTrial', 'beta_0001.nii'));
@@ -89,36 +105,24 @@ for t = 1:length(theta_sources)
                     elseif strcmp(current_cross_validation, 'xRun')
                         training_idx = {{'face1'}, {'face2'}, {'word1'}, {'word2'}};
                         test_idx = {{'face2'}, {'face1'}, {'word2'}, {'word1'}};
-                    elseif strcmp(current_cross_validation, 'phi0')
-                        training_idx = {'phi0', 'phi0', 'phi0'}; test_idx = {{'face1', 'word1', 'face2', 'word2'}, {'face1', 'face2'}, {'word1', 'word2'}};
-                    elseif strcmp(current_cross_validation, 'avgAllRuns')
-                        test_idx = {{'face1'},{'face2'},{'word1'},{'word2'},{'face1', 'face2', 'word1', 'word2'}, {'face1', 'face2'}, {'word1', 'word2'}};
-                        training_idx = repmat({{'face1', 'face2', 'word1', 'word2'}}, 1, length(test_idx));
-                    elseif strcmp(current_cross_validation, 'xModalitySingleRun')
-                        training_idx = {{'face1'}, {'face1'}, {'word1'}, {'word1'}, {'face2'}, {'face2'}, {'word2'}, {'word2'}};
-                        test_idx = {{'word1'}, {'word2'}, {'face1'}, {'face2'}, {'word1'}, {'word2'}, {'face1'}, {'face2'}};
                     end
 
                     for t_idx = 1:length(training_idx)
                         current_training_idx = training_idx{t_idx}; current_test_idx = test_idx{t_idx};
                     
                 
-                        if strcmp(current_cross_validation, 'phi0')
-                            phi_value = 0;
+                        if strcmp(phi_source_region, 'current')
+                            phi_file = fullfile(phi_dir_voxelcomponentaverage, ['sub', current_subject], 'includeNonNorm', ['periodicity', num2str(current_periodicity)], ['theta', current_angle_source],...
+                                ['PhiRadDivByPeriod_', current_region_name, '.mat']);
                         else
-                            if strcmp(phi_source_region, 'current')
-                                phi_file = fullfile(phi_dir_voxelcomponentaverage, ['sub', current_subject], 'includeNonNorm', ['periodicity', num2str(current_periodicity)], ['theta', current_angle_source],...
-                                    ['PhiRadDivByPeriod_', current_region_name, '.mat']);
-                            else
-                                phi_file = fullfile(phi_dir_voxelcomponentaverage, ['sub', current_subject], 'includeNonNorm', ['periodicity', num2str(current_periodicity)], ['theta', current_angle_source],...
-                                    ['PhiRadDivByPeriod_', phi_source_region, '.mat']);
-                            end
-                            load(phi_file);
-                            if strcmp(current_cross_validation, 'xModalitySingleRun')
-                                phi_value = phiRadDivByPeriod_struct.crossValidations.('xRun').(strjoin(current_training_idx, '_'));
-                            else
-                                phi_value = phiRadDivByPeriod_struct.crossValidations.(current_cross_validation).(strjoin(current_training_idx, '_'));
-                            end
+                            phi_file = fullfile(phi_dir_voxelcomponentaverage, ['sub', current_subject], 'includeNonNorm', ['periodicity', num2str(current_periodicity)], ['theta', current_angle_source],...
+                                ['PhiRadDivByPeriod_', phi_source_region, '.mat']);
+                        end
+                        load(phi_file);
+                        if strcmp(current_cross_validation, 'xModalitySingleRun')
+                            phi_value = phiRadDivByPeriod_struct.crossValidations.('xRun').(strjoin(current_training_idx, '_'));
+                        else
+                            phi_value = phiRadDivByPeriod_struct.crossValidations.(current_cross_validation).(strjoin(current_training_idx, '_'));
                         end
 
                         if if_va_control
@@ -131,7 +135,6 @@ for t = 1:length(theta_sources)
                             if if_id_setting_control, optional_args = [optional_args, {'IDSetting', id_setting_data_all(data_mask, :)}]; end
                             if if_response_control, optional_args = [optional_args, {'Response', response_data_all(data_mask, :)}]; end
                             optional_args = [optional_args, {'Subsample', subsample, 'NumSamples', n_samples, 'Seed', seed}];
-
 
                             [beta_alignment, contrast_value, design_tbl] = perform_multivariate_contrast_control(core_args{:}, optional_args{:});
 

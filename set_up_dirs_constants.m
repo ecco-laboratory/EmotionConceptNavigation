@@ -19,7 +19,6 @@ function [project_dir, fmri_data_dir, psychopy_csv_dir, theta_dir, category_dir,
     spm2ndlevel_dir = fullfile(project_dir, 'outputs', 'spm_level2models');
     phi_dir = fullfile(project_dir, 'outputs', 'phi');
     subjects = {'0019','0017','0011', '0021','0008','0014', '0015', '0016','0018', '0013','0012', '0010', '0009', '0007','0004', '0003', '0002', '0001'};
-
 end
 
 

@@ -27,8 +27,9 @@ for (modality in modalities) {
     df$outscan_consistency <- as.numeric(df$outscan_consistency)
     #df$outscan_rating_change_c <- scale(df$outscan_rating_change, scale = FALSE)#mean center
     #df$outscan_rating_change_z <- scale(df$outscan_rating_change) #z
+    #df$comparison_type <- as.factor(df$comparison_type)
 
-    m <- glmer(outscan_consistency ~ outscan_rating_change + 
+    m <- glmer(outscan_consistency ~ outscan_rating_change + #comparison_type +
                   (1 + outscan_rating_change | sub_id),
                 data = df, family = binomial)
     print(summary(m))

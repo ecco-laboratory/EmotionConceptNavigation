@@ -1,12 +1,13 @@
 library(lme4)        
 library(lmerTest)    
 library(boot)
+library(dplyr)
 project_dir = '/home/data/eccolab/MNS/';
 
 
-region_names <- c("OFC2016ConstantinescuR5","HC", "aHC","pHC")
+region_names <- c("OFC2016ConstantinescuR5") #,"HC", "aHC","pHC")
 sources <- c("Subavg", "Subspec")
-distance_types <- c("va", "judged", "catCosine", "catMax",'catDominantAvg','judgedSigned')
+distance_types <- c("vaSum") #"va", "judged", "catCosine", "catMax",'catDominantAvg','judgedSigned')
 modality_to_use = c('both_modalities');
 
 

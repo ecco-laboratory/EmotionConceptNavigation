@@ -7,11 +7,11 @@ smooth = 'unsmoothed'; spm1stlevel_dir = fullfile(spm1stlevel_dir, smooth);
 
 modality_to_use = 'both_modalities';
 runs = [1, 2];
-distance_types = {'catMaxEuclidean','catDominantAvg','catDominantEuclidean','vSigned','aSigned','judgedSigned','va', 'judged', 'catCosine', 'catMax', 'v', 'a'};
+distance_types = {'vaSum'}; %{'catMaxEuclidean','catDominantAvg','catDominantEuclidean','vSigned','aSigned','judgedSigned','va', 'judged', 'catCosine', 'catMax', 'v', 'a'};
 inscan_judgment_dir = fullfile(project_dir, 'data', 'beh', 'inscan_judgment');
 
 
-region_names = {'aHC','pHC','OFC2016ConstantinescuR5','vmPFCcurrentStudyR5','HC', 'ERC'};
+region_names = {'OFC2016ConstantinescuR5','HC', 'ERC'}; %{'aHC','pHC','OFC2016ConstantinescuR5','vmPFCcurrentStudyR5','HC', 'ERC'};
 yhat_output_dir = fullfile(project_dir, 'outputs', 'singleTrialBetaAnalysis', ICA_type, 'incl_all_subs_trials', 'distanceCentered_multivariate_encoding_yhat_ytest', smooth, modality_to_use); 
 
 va_dir = fullfile(project_dir, 'data', 'beh', 'VA');
@@ -30,22 +30,23 @@ for t = 1:length(beh_sources)
         
         current_yhat_output_dir = fullfile(yhat_output_dir, current_beh_source, current_distance_type);
         output_dir = fullfile(current_yhat_output_dir, 'csv');if ~exist(output_dir, 'dir'), mkdir(output_dir); end
-        load(fullfile(current_yhat_output_dir, 'Ypredproj_allregions.mat'));
+        load(fullfile(current_yhat_output_dir, 'Ypredproj_allregions.mat')); %'Yproj_allregions.mat')); %Ypredproj_allregions.mat
         for r = 1:length(region_names)
             current_region_name = region_names{r};
-            current_region_Yproj = Ypredproj_allregions.(current_region_name);
+            current_region_Yproj = Ypredproj_allregions.(current_region_name); %Yproj_allregions.(current_region_name); %Ypredproj_allregions.(current_region_name);
             %make sure current_region_Yproj .test_subject is the same as the subject_ids
             if ~isequal(current_region_Yproj.test_subject, subject_ids)
                 error('Test subject mismatch between current_region_Yproj and subject_ids.');
             end
             tbl = current_region_Yproj;
             %tbl.Yproj = tbl.Yproj - mean(tbl.Yproj);
-            tbl.Ypredproj = tbl.Ypredproj;
+            %tbl.Ypredproj = tbl.Ypredproj;
             tbl.consistency = consistency_data_all;
-            %save tbl to csv
-            %writetable(tbl, fullfile(output_dir, ['beh_Yproj_', current_region_name, '.csv']));
-
             tbl.distance = distance_data;
+            %save tbl to csv
+            %writetable(tbl, fullfile(output_dir, ['beh_Yproj_raw_wDistance_', current_region_name, '.csv']));
+
+            
             writetable(tbl, fullfile(output_dir, ['beh_Ypredproj_raw_wDistance_', current_region_name, '.csv']));
 
         end
@@ -127,6 +128,8 @@ function [distance_data] = prepare_distance_data(category_data_all, va_data_all,
         distance_data = vDist - mean(vDist);
     elseif strcmp(current_distance_type, 'a')
         distance_data = aDist - mean(aDist);
+    elseif strcmp(current_distance_type, 'vaSum')
+        distance_data = vDist + aDist - mean(vDist + aDist);
     elseif strcmp(current_distance_type, 'vSigned')
         distance_data = vSignedDist - mean(vSignedDist);
     elseif strcmp(current_distance_type, 'aSigned')

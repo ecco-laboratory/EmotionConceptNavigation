@@ -19,7 +19,7 @@ for i = 1:length(subjects)
         for r = 1:length(runs)
             run = runs{r};
             disp(['Processing subject: ', subject, ', run: ', num2str(run), ', modality: ', modality]);
-
+%{
             %save outscan_consistency
             inscan_consistency_struct = struct();
             inscan_consistency_struct.Subspec = beh_data.outscan_consistency(strcmp(beh_data.sub_id, subject) & strcmp(beh_data.modality, modality) & strcmp(beh_data.run, run) & strcmp(beh_data.source, 'subspec'))';
@@ -60,6 +60,27 @@ for i = 1:length(subjects)
             end
             save(fullfile(output_dir, ['sub', subject], ['sub', subject, '_', modality, '_comparison_run', num2str(str2num(run)), '.mat']), 'inscan_comparison_struct');
             disp(['Saved inscan comparison to ', fullfile(output_dir, ['sub', subject], ['sub', subject, '_', modality, '_comparison_run', num2str(str2num(run)), '.mat'])]);
+%}
+
+            %save inscan_rating
+            inscan_rating_struct = struct();
+            inscan_rating_struct.Subspec = beh_data.inscan_rating(strcmp(beh_data.sub_id, subject) & strcmp(beh_data.modality, modality) & strcmp(beh_data.run, run) & strcmp(beh_data.source, 'subspec'))';
+            inscan_rating_struct.Subavg = beh_data.inscan_rating(strcmp(beh_data.sub_id, subject) & strcmp(beh_data.modality, modality) & strcmp(beh_data.run, run) & strcmp(beh_data.source, 'subavg'))';
+            %make sure face run 01 or run0 02 have length 41 or 43,  word run 01 has length 62, word run 02 has length 62
+            if strcmp(modality, 'face') && (strcmp(run, '01') || strcmp(run, '02'))
+                if (length(inscan_rating_struct.Subspec) ~= 41 && length(inscan_rating_struct.Subspec) ~= 43) || (length(inscan_rating_struct.Subavg) ~= 41 && length(inscan_rating_struct.Subavg) ~= 43)
+                    error('Face run 01 should have length 41 or 43 for subject %s', subject);
+                end
+            elseif strcmp(modality, 'word') && (strcmp(run, '01') || strcmp(run, '02'))
+                if length(inscan_rating_struct.Subspec) ~= 62 || length(inscan_rating_struct.Subavg) ~= 62
+                    error('Word run 01 or 02 should have length 62 for subject %s', subject);
+                end
+            end
+            if ~exist(fullfile(output_dir, ['sub', subject]), 'dir')
+                mkdir(fullfile(output_dir, ['sub', subject]));
+            end
+            save(fullfile(output_dir, ['sub', subject], ['sub', subject, '_', modality, '_response_run', num2str(str2num(run)), '.mat']), 'inscan_rating_struct');
+            disp(['Saved inscan response to ', fullfile(output_dir, ['sub', subject], ['sub', subject, '_', modality, '_response_run', num2str(str2num(run)), '.mat'])]);
         end
     end
 end
