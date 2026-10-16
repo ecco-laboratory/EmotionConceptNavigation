@@ -9,6 +9,10 @@ Instructions for installing SPM12 can be found [here](https://www.fil.ion.ucl.ac
 
 Analyses were performed using MATLAB R2024a, Python 3.9.18, and R 4.4.1 on Ubuntu 20.04.6 LTS (Focal Fossa). No non-standard or specialized hardware was required.
 
+## Data
+fMRI data can be downloaded from [OpenNeuro](https://openneuro.org/datasets/ds008948/versions/1.0.0).
+Behavioral data can be downloaded from [OSF](https://osf.io/5fkuy/).
+
 ## Summary of analyses
 
 **Behavioral analyses**
