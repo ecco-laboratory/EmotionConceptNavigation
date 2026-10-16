@@ -1,4 +1,4 @@
-# A grid-like basis for affective space in human ventromedial prefrontal cortex
+# Emotion knowledge is structured in a grid-like coordinate system in the human ventromedial prefrontal cortex
 
 In this fMRI study, we tested whether abstract emotion concepts are represented in the human brain using grid-like codes.
 
